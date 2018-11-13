@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+		xmlns:aop="http://www.springframework.org/schema/aop"
+		xmlns="http://www.springframework.org/schema/beans" 
+		xmlns:context="http://www.springframework.org/schema/context" 
+		xmlns:tx="http://www.springframework.org/schema/tx" 
+		xsi:schemaLocation="http://www.springframework.org/schema/aop 
+							http://www.springframework.org/schema/aop/spring-aop-4.2.xsd 
+							http://www.springframework.org/schema/beans 
+							http://www.springframework.org/schema/beans/spring-beans-4.2.xsd 
+							http://www.springframework.org/schema/context 
+							http://www.springframework.org/schema/context/spring-context-4.2.xsd 
+							http://www.springframework.org/schema/tx 
+							http://www.springframework.org/schema/tx/spring-tx-4.2.xsd ">
+	
+	<!-- 事务 -->
+	<!-- 核心事务管理器 -->
+	<!-- 
+		事务的作用：事务管理是通过SessionFactory 创建和维护Session 来完成。而Spring 对
+			SessionFactory配置也进行了整合，不需要在通过hibernate.cfg.xml来对SessionaFactory进行
+			设定。这样的话就可以很好的利用Sping对事务管理强大功能。避免了每次对数据操作都要
+			现获得Session实例来启动事务/提交/回滚事务还有繁琐的Try/Catch操作。这些也就是Spring
+			中的AOP（面向切面编程）机制很好的应用。一方面使开发业务逻辑更清晰、专业分工更
+			加容易进行。另一方面就是应用Spirng AOP隔离降低了程序的耦合性使我们可以在不同
+			的应用中将各个切面结合起来使用大大提高了代码重用度
+	-->
+	<bean name="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"></property><!-- 在这里获得sessionFactory对象 -->
+	</bean>
+	<!-- 配置通知 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<!--
+				isolation:隔离级别（这里选用默认，一般也只用默认）
+				propagation:传播行为（一般用这种就行）
+				read-only:是否只读（false表示可以修改）
+			-->
+			<tx:method name="save*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="false" />
+			<tx:method name="persist*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="false" />
+			<tx:method name="update*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="false" />
+			<tx:method name="modify*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="false" />
+			<tx:method name="delete*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="false" />
+			<tx:method name="remove*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="false" />
+			<tx:method name="get*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="true" />
+			<tx:method name="find*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="true" />
+			<tx:method name="*" isolation="REPEATABLE_READ" propagation="REQUIRED" read-only="false" /><!-- 配置一下所有方法，如果上面定义的这些方法名没用到，会使用这个 -->
+		</tx:attributes>
+	</tx:advice>
+	<!-- 配置通知织入目标对象 -->
+	<aop:config>
+		<!-- 配置切点 -->
+		<aop:pointcut expression="execution(* com.ws.service.impl.*ServiceImpl.*(..))" id="txPc"/>
+		<!-- 配置切面 -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txPc"/>
+	</aop:config>
+	
+	
+	
+	
+	<!-- Hibernate与spring -->
+	<!-- 读取db.properties文件 -->
+	<context:property-placeholder location="classpath:db.properties"/>
+	<!-- 配置c3p0连接池 -->
+	<bean name="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" >
+		<property name="jdbcUrl" value="${jdbc.jdbcUrl}" ></property>
+		<property name="driverClass" value="${jdbc.driverClass}" ></property>
+		<property name="user" value="${jdbc.user}" ></property>
+		<property name="password" value="${jdbc.password}" ></property>
+	</bean>
+	<!-- 在spring配置中放置hibernate配置信息 -->
+	<bean name="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<!-- 将连接池注入到sessionFacation，Hibernate会通过连接池获得连接 -->
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="hibernateProperties">
+			<props>
+				<!-- 必选配置（db.properties） -->
+				<!-- <prop key="hibernate.connection.driver_class">com.mysql.jdbc.Driver</prop>
+				<prop key="hibernate.connection.url">jdbc:mysql:///crm_32</prop>
+				<prop key="hibernate.connection.username">root</prop>
+				<prop key="hibernate.connection.password">18720606804</prop> -->
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop><!-- MySQLDialect：数据库方言 -->
+				<!-- 可选配置 --> 
+				<prop key="hibernate.hbm2ddl.auto">update</prop><!-- 自动建表：update（更新表结构） -->
+				<prop key="hibernate.show_sql">true</prop><!-- show_sql:打印sql语句 -->
+				<prop key="hibernate.format_sql">true</prop><!-- format_sql:格式化打印出来的sql语句 -->
+			</props>
+		</property>
+		<!-- 引入orm元数据,指定元数据所在的包路径，spring会自动读取包中的所有配置 -->
+		<property name="mappingDirectoryLocations" value="classpath:com/ws/domain"></property>
+	</bean>
+	
+	
+	
+	<!-- Struts2与spring --> 
+	<!-- action -->
+	<bean id="checkImgAction" class="com.ws.web.action.CheckImgAction" scope="prototype">
+		
+	</bean>
+	<bean name="imageAction" class="com.ws.web.action.ImageAction" scope="prototype">
+		<property name="imageService" ref="imageService"></property>
+	</bean>
+	<bean name="userAction" class="com.ws.web.action.UserAction" scope="prototype">
+		<property name="userService" ref="userService"></property>
+	</bean>
+	
+	<!-- service -->
+	<bean name="imageService" class="com.ws.service.impl.ImageServiceImpl">
+		<property name="imageDao" ref="imageDao"></property>
+	</bean>
+	<bean name="userService" class="com.ws.service.impl.UserServiceImpl">
+		<property name="userDao" ref="userDao"></property>
+	</bean>
+	<!-- dao -->
+	<bean name="imageDao" class="com.ws.dao.impl.ImageDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory" ></property>
+	</bean>
+	<bean name="userDao" class="com.ws.dao.impl.UserDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory" ></property>
+	</bean>
+	
+	
+</beans>

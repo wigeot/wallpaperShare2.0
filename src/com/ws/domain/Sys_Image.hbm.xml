@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC 
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ws.domain" >
+	<class name="Sys_Image" table="sys_image" >
+		<id name="img_id"  >
+			<!-- generator:主键生成策略 -->
+			<generator class="native"></generator>
+		</id>
+		<property name="img_Src" column="img_Src" ></property>
+		<property name="img_Date" column="img_Date" ></property>
+		<property name="img_name" column="img_name" ></property>
+		<property name="img_Resolution" column="img_Resolution" ></property>
+		<property name="img_Size" column="img_Size" ></property>
+		<property name="img_sort" column="img_sort" ></property>
+	
+		<!-- 多对一 -->
+		<many-to-one name="img_user_userName" column="user_userName" class="Sys_User"></many-to-one>
+	</class>
+</hibernate-mapping>
